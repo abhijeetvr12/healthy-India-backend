@@ -29,6 +29,7 @@ const openai = new OpenAI({
 const upload = multer({ storage: multer.memoryStorage() });
 
 // OCR & DeepSeek Route
+// OCR & DeepSeek Route
 app.post('/analyze', upload.single('image'), async (req, res) => {
   try {
     const imageBuffer = req.file.buffer;
@@ -46,7 +47,7 @@ ${ocrText}
 2. If Unhealthy, which ingredients are causing this and how unhealthy are they?
 3. What is the impact of these ingredients on my health and the approximate time to observe these effects?
 
-Respond strictly in JSON format:
+Respond strictly in this JSON format:
 {
   "is_healthy": "Healthy/Unhealthy",
   "unhealthy_ingredients": {
@@ -56,7 +57,7 @@ Respond strictly in JSON format:
     "Ingredient A": "Raises blood pressure (6 months)"
   }
 }
-    `;
+`;
 
     const chatResponse = await openai.chat.completions.create({
       model: "deepseek-chat",
@@ -67,16 +68,28 @@ Respond strictly in JSON format:
     });
 
     const content = chatResponse.choices[0].message.content;
-    const match = content.match(/\{[\s\S]*?\}/);
-    if (!match) return res.status(400).json({ error: 'Invalid response from DeepSeek.' });
 
-    const result = JSON.parse(match[0]);
+    // 🔧 Extract JSON safely using regex
+    const match = content.match(/\{[\s\S]*?\}/);
+    if (!match) {
+      return res.status(400).json({ error: 'Invalid or missing JSON in DeepSeek response.' });
+    }
+
+    let result;
+    try {
+      result = JSON.parse(match[0]);
+    } catch (jsonErr) {
+      console.error('JSON parse error:', jsonErr);
+      return res.status(500).json({ error: 'Failed to parse DeepSeek JSON response.' });
+    }
+
     res.json(result);
   } catch (err) {
-    console.error(err);
+    console.error('OCR/AI Error:', err);
     res.status(500).json({ error: 'Server error during analysis.' });
   }
 });
+
 
 // Start server
 const PORT = process.env.PORT || 5000;
