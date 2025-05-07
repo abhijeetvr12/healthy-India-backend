@@ -39,8 +39,7 @@ app.post('/analyze', upload.single('image'), async (req, res) => {
     // 1) OCR
     const { data: { text: ocrText } } = await tesseract.recognize(req.file.buffer);
 
-    // 2) Build prompt: raw JSON only, no fences or extra text,
-    //    with example values stripped of qualifiers
+    // 2) Build prompt: raw JSON only, no fences, with unhealthy_ingredients as an array
     const prompt = `
 You are a health assistant that evaluates food ingredients.
 Given the following list of ingredients extracted from a food product:
@@ -48,15 +47,15 @@ Given the following list of ingredients extracted from a food product:
 ${ocrText}
 
 Respond with a single valid JSON object, with no markdown fences or extra commentary.
-Do not append qualifiers like "Very Unhealthy" or durations in parentheses—just return the raw labels.
+- Do not include qualifiers like "Very Unhealthy".
+- Do not include durations in parentheses.
+- Return unhealthy_ingredients as an array of ingredient names.
 
 Example format:
 
 {
   "is_healthy": "Healthy" or "Unhealthy",
-  "unhealthy_ingredients": {
-    "Ingredient A": ""
-  },
+  "unhealthy_ingredients": ["Ingredient A"],
   "health_impacts": {
     "Ingredient A": "Raises blood pressure"
   }
