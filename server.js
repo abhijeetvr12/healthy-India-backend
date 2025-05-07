@@ -55,7 +55,7 @@ Example format:
 {
   "is_healthy": "Healthy" or "Unhealthy",
   "unhealthy_ingredients": {
-    "Ingredient A"
+    "Ingredient A": ""
   },
   "health_impacts": {
     "Ingredient A": "Raises blood pressure"
