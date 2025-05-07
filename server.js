@@ -51,10 +51,10 @@ Respond with a single valid JSON object, with no markdown fences or extra commen
 {
   "is_healthy": "Healthy" or "Unhealthy",
   "unhealthy_ingredients": {
-    "Ingredient A": "Very Unhealthy"
+    "Ingredient A"
   },
   "health_impacts": {
-    "Ingredient A": "Raises blood pressure (6 months)"
+    "Ingredient A": "Raises blood pressure"
   }
 }
 `;
