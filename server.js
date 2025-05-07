@@ -39,18 +39,14 @@ app.post('/analyze', upload.single('image'), async (req, res) => {
     // 1) OCR
     const { data: { text: ocrText } } = await tesseract.recognize(req.file.buffer);
 
-    // 2) Build prompt: raw JSON only, no fences or extra text,
-    //    with example values stripped of qualifiers
+    // 2) Build prompt: raw JSON only, no fences or extra text
     const prompt = `
 You are a health assistant that evaluates food ingredients.
 Given the following list of ingredients extracted from a food product:
 
 ${ocrText}
 
-Respond with a single valid JSON object, with no markdown fences or extra commentary.
-Do not append qualifiers like "Very Unhealthy" or durations in parentheses—just return the raw labels.
-
-Example format:
+Respond with a single valid JSON object, with no markdown fences or extra commentary:
 
 {
   "is_healthy": "Healthy" or "Unhealthy",
@@ -58,7 +54,7 @@ Example format:
     "Ingredient A": ""
   },
   "health_impacts": {
-    "Ingredient A": "Raises blood pressure"
+    "Ingredient A": "Raises blood pressure (6 months)"
   }
 }
 `;
