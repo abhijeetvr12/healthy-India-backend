@@ -52,10 +52,7 @@ ${ocrText.trim()}
 Perform the following tasks:
 1. Classify the product as either "Good for Consumption" or "Not Good for Consumption".
 2. List specific reasons (e.g., high sugar, artificial preservatives, synthetic colorants, trans fats) clearly linked to the ingredients.
-3. Suggest 2–3 healthier packaged food alternatives available in India that:
-   - Do not contain those harmful ingredients,
-   - Use natural or minimally processed ingredients,
-   - Are available on Amazon, BigBasket, or Wellcurve.
+3. Suggest 2–3 healthier packaged food alternatives available in India.
 
 Respond with a single valid JSON object (no markdown fences), in exactly this shape:
 
@@ -67,14 +64,10 @@ Respond with a single valid JSON object (no markdown fences), in exactly this sh
   ],
   "suggested_alternatives": [
     {
-      "name": "Organic Oats Muesli",
-      "retailer": "Amazon",
-      "link": "https://amazon.in/..."
+      "name": "Organic Oats Muesli"
     },
     {
-      "name": "Millet Flakes",
-      "retailer": "BigBasket",
-      "link": "https://bigbasket.com/..."
+      "name": "Millet Flakes"
     }
   ]
 }
@@ -90,7 +83,6 @@ Respond with a single valid JSON object (no markdown fences), in exactly this sh
     });
 
     const raw = chatResponse.choices[0].message.content;
-    console.log('💬 DeepSeek raw response:', raw);
 
     // d) Strip any code fences and isolate JSON
     let jsonText = raw
@@ -102,7 +94,6 @@ Respond with a single valid JSON object (no markdown fences), in exactly this sh
 
     const match = jsonText.match(/\{[\s\S]*\}$/);
     if (!match) {
-      console.error('❌ No JSON found in response.');
       return res.status(400).json({ error: 'Invalid JSON in DeepSeek response.' });
     }
 
@@ -111,7 +102,6 @@ Respond with a single valid JSON object (no markdown fences), in exactly this sh
     try {
       result = JSON.parse(match[0]);
     } catch (parseErr) {
-      console.error('❌ JSON.parse error:', parseErr);
       return res.status(500).json({ error: 'Failed to parse JSON from DeepSeek.' });
     }
 
