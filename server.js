@@ -46,17 +46,24 @@ app.post('/analyze', upload.single('image'), async (req, res) => {
     const prompt = `
 You are a food safety expert aligned with FSSAI (India) and global food safety standards.
 
-Given the following list of food ingredients:
+First, extract all the ingredients from the scanned image text below. Focus only on the section listing food ingredients, ignoring other text like nutritional info, usage instructions, or manufacturer details.
+
+Scanned Text:
 ${ocrText.trim()}
 
-Perform the following tasks:
+Once you've identified the ingredients list, perform the following:
+
 1. Classify the product as either "Good for Consumption" or "Not Good for Consumption".
 2. List specific reasons (e.g., high sugar, artificial preservatives, synthetic colorants, trans fats) clearly linked to the ingredients.
-3. Suggest 2–3 healthier packaged food alternatives available in India.
+3. Suggest 2–3 healthier packaged food alternatives available in India that:
+   - Do not contain those harmful ingredients,
+   - Use natural or minimally processed ingredients,
+   - Are available on Amazon, BigBasket, or Wellcurve.
 
 Respond with a single valid JSON object (no markdown fences), in exactly this shape:
 
 {
+  "ingredients_extracted": [ "ingredient1", "ingredient2", ... ],
   "verdict": "Good for Consumption" | "Not Good for Consumption",
   "reasons": [
     "High sugar content",
@@ -64,10 +71,14 @@ Respond with a single valid JSON object (no markdown fences), in exactly this sh
   ],
   "suggested_alternatives": [
     {
-      "name": "Organic Oats Muesli"
+      "name": "Organic Oats Muesli",
+      "retailer": "Amazon",
+      "link": "https://amazon.in/..."
     },
     {
-      "name": "Millet Flakes"
+      "name": "Millet Flakes",
+      "retailer": "BigBasket",
+      "link": "https://bigbasket.com/..."
     }
   ]
 }
