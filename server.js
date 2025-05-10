@@ -61,17 +61,18 @@ Perform the following steps:
 
 3. **Generate Alerts**:
    - Total number of concerning ingredients based on being artificial/synthetic, above safe limits, or having harmful health impacts
-   - Product Labels:
-     - If any ingredient is artificial → Add "Contains Artificial Substances"
-     - If any ingredient is synthetic → Add "Contains Synthetic Substances"
-     - If any ingredient is above the FSSAI safe limit → Add "Unhealthy"
-     - Based on cumulative health impacts → Add an overall label such as "Potentially Harmful", "Caution Advised", or "Safe"
+   - Product Labels (include any combination of these and also whether the product itself is Processed or Unprocessed):
+     - "Contains Artificial Substances"
+     - "Contains Synthetic Substances"
+     - "Unhealthy"
+     - "Potentially Harmful"
+     - **"Processed"** or **"Unprocessed"** (to indicate the product’s overall processing level)
 
 4. **Suggest 2–3 healthier alternatives** from **Indian brands** that:
    - Offer a similar product type (e.g., chips, cookies, drinks)
    - Use only natural or minimally processed ingredients
    - Do not contain the identified harmful substances
-   - Include a **buy link that redirects through our site** to the actual product on the merchant website.
+   - Include a **buy link** that points to the official brand site, Amazon, or another major retailer (e.g. “https://www.amazon.in/…”)
 
 Respond in the exact JSON format below (no markdown fences):
 
@@ -83,28 +84,30 @@ Respond in the exact JSON format below (no markdown fences):
       "processing_level": "Processed" | "Unprocessed",
       "safety_level": "Above Safe Limit" | "Below Safe Limit" | "Limit Not Specified",
       "health_impact": "Brief summary of health effects"
-    },
-    ...
+    }
+    // … more …
   ],
   "product_labels": [
     "Contains Artificial Substances",
     "Unhealthy",
-    "Potentially Harmful"
+    "Potentially Harmful",
+    "Processed"
   ],
   "total_alerts": 3,
   "suggested_alternatives": [
     {
-      "name": "Ragi Cookies",
+      "name": "Tata Soulfull Ragi Cookies",
       "brand": "Tata Soulfull",
       "category": "Cookies",
-      "buy_link": "https://yourplatform.com/redirect/tata-soulfull-ragi-cookies"
+      "buy_link": "https://www.amazon.in/Tata-Soulfull-Organic-Ragi-Cookies/dp/B07XYZ1234"
     },
     {
-      "name": "Jowar Chips",
+      "name": "Too Yumm Jowar Chips",
       "brand": "Too Yumm",
       "category": "Snacks",
-      "buy_link": "https://yourplatform.com/redirect/too-yumm-jowar-chips"
+      "buy_link": "https://www.tooyumm.com/shop/jowar-chips"
     }
+    // … more …
   ]
 }
 `;
