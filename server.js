@@ -3,7 +3,7 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const multer = require("multer");
+const multer = require("multer");  
 const tesseract = require("tesseract.js");
 const { OpenAI } = require("openai");
 const admin = require("firebase-admin");
