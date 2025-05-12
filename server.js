@@ -1,81 +1,49 @@
-
+// server.js
 require("dotenv").config();
+
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-const multer = require("multer");  
+const multer = require("multer");
 const tesseract = require("tesseract.js");
 const { OpenAI } = require("openai");
-const admin = require("firebase-admin");
 
-// init Firebase Admin
-const serviceAccount = require("./serviceAccountKey.json");
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-});
+const authRoutes = require("./routes/auth");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/api/auth", authRoutes);
 
-// connect MongoDB
+// 1) Connect to MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// Mongoose schema for storing results
-const AnalysisResultSchema = new mongoose.Schema({
-  uid: String,             // Firebase UID
-  phone: String,           // user phone
-  imageUrl: String,        // local path or hosted URL
-  location: {
-    latitude: Number,
-    longitude: Number,
-  },
-  ingredients_analyzed: Array,
-  product_labels: [String],
-  total_alerts: Number,
-  suggested_alternatives: Array,
-  createdAt: { type: Date, default: Date.now },
-});
-const AnalysisResult = mongoose.model("AnalysisResult", AnalysisResultSchema);
-
-// init OpenAI/DeepSeek
+// 2) Initialize DeepSeek/OpenAI client
 const openai = new OpenAI({
   apiKey: process.env.DEEPSEEK_API_KEY,
   baseURL: "https://api.deepseek.com",
 });
 
-// multer for image upload
+// 3) Multer for in-memory uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
-// middleware: verify Firebase ID token
-async function authenticate(req, res, next) {
-  const idToken = req.headers.authorization?.split("Bearer ")[1];
-  if (!idToken) return res.status(401).json({ error: "No token" });
+// 4) OCR & Analysis endpoint
+app.post("/analyze", upload.single("image"), async (req, res) => {
   try {
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    req.uid = decoded.uid;
-    req.phone = decoded.phone_number;
-    next();
-  } catch (e) {
-    return res.status(401).json({ error: "Invalid token" });
-  }
-}
+    if (!req.file) {
+      return res.status(400).json({ error: "No image file provided." });
+    }
 
-// OCR & analysis endpoint
-app.post("/analyze", authenticate, upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) return res.status(400).json({ error: "No image" });
-
-    // OCR
+    // a) Run OCR on the uploaded image
     const {
       data: { text: ocrText },
     } = await tesseract.recognize(req.file.buffer);
 
-    // build prompt
-       const prompt = `
+    // b) Build FSSAI‐aligned prompt
+    const prompt = `
 You are a food safety expert aligned with FSSAI (India) and global food safety standards.
 
 Given the scanned image text of the food product's ingredient section:
@@ -144,40 +112,56 @@ Respond in the exact JSON format below (no markdown fences):
 }
 `;
 
-    // call DeepSeek
-    const chat = await openai.chat.completions.create({
+    // c) Call DeepSeek chat completion
+    const chatResponse = await openai.chat.completions.create({
       model: "deepseek-chat",
       messages: [
-        { role: "system", content: "You are a health assistant..." },
+        {
+          role: "system",
+          content:
+            "You are a health assistant that evaluates food ingredients.",
+        },
         { role: "user", content: prompt },
       ],
     });
-    let raw = chat.choices[0].message.content;
-    // strip fences + parse
-    raw = raw.replace(/^```json\s*/i, "").replace(/```$/i, "").trim();
-    const json = JSON.parse(raw.match(/\{[\s\S]*\}$/)![0]);
 
-    // save to Mongo
-    const loc = {
-      latitude: parseFloat(req.body.latitude),
-      longitude: parseFloat(req.body.longitude),
-    };
-    const doc = new AnalysisResult({
-      uid: req.uid,
-      phone: req.phone,
-      imageUrl: `uploaded_images/${Date.now()}.jpg`,
-      location: loc,
-      ...json,
-    });
-    await doc.save();
+    const raw = chatResponse.choices[0].message.content;
 
-    res.json(json);
-  } catch (err: any) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    // d) Strip any code fences and isolate JSON
+    let jsonText = raw
+      .trim()
+      .replace(/^```json\s*/, "")
+      .replace(/^```\s*/, "")
+      .replace(/```$/, "")
+      .trim();
+
+    const match = jsonText.match(/\{[\s\S]*\}$/);
+    if (!match) {
+      return res
+        .status(400)
+        .json({ error: "Invalid JSON in DeepSeek response." });
+    }
+
+    // e) Parse JSON safely
+    let result;
+    try {
+      result = JSON.parse(match[0]);
+    } catch (parseErr) {
+      return res
+        .status(500)
+        .json({ error: "Failed to parse JSON from DeepSeek." });
+    }
+
+    // f) Send final structured result
+    return res.json(result);
+  } catch (err) {
+    console.error("🛑 /analyze error:", err);
+    return res.status(500).json({ error: "Server error during analysis." });
   }
 });
 
-app.listen(process.env.PORT || 5000, () =>
-  console.log("🚀 Server running")
-);
+// 5) Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`);
+});
